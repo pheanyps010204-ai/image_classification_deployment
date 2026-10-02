@@ -9,3 +9,4 @@ pydantic
 pytest
 httpx
 matplotlib
+Jinja2

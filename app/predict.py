@@ -1,6 +1,7 @@
-from pathlib import Path
+from io import BytesIO
 
 from fastapi import HTTPException, UploadFile
+from PIL import Image
 
 from src.inference import load_model, predict_image
 
@@ -11,7 +12,7 @@ model = load_model()
 
 async def predict_uploaded_image(file: UploadFile):
     """
-    Save an uploaded image temporarily and run model inference.
+    Process an uploaded image and run model inference.
     """
 
     # Check that a file was uploaded
@@ -34,8 +35,6 @@ async def predict_uploaded_image(file: UploadFile):
             detail="Please upload a JPEG or PNG image."
         )
 
-    temp_path = Path("temp_image.png")
-
     try:
         # Read uploaded image
         image_data = await file.read()
@@ -47,8 +46,16 @@ async def predict_uploaded_image(file: UploadFile):
                 detail="The uploaded file is empty."
             )
 
-        # Save temporarily
-        temp_path.write_bytes(image_data)
+        # Verify that the uploaded file is a valid image
+        image = Image.open(BytesIO(image_data))
+        image.verify()
+
+        # Re-open the image because verify() closes the image
+        image = Image.open(BytesIO(image_data)).convert("RGB")
+
+        # Save a temporary image
+        temp_path = "temp_image.png"
+        image.save(temp_path)
 
         # Run prediction
         predicted_class, confidence, probabilities = predict_image(
@@ -65,13 +72,17 @@ async def predict_uploaded_image(file: UploadFile):
     except HTTPException:
         raise
 
-    except Exception:
+    except Exception as e:
+        print(f"Prediction error: {e}")
+
         raise HTTPException(
             status_code=400,
-            detail="Could not process the uploaded image."
+            detail=f"Could not process the uploaded image: {str(e)}"
         )
 
     finally:
         # Remove temporary image
-        if temp_path.exists():
-            temp_path.unlink()
+        import os
+
+        if os.path.exists("temp_image.png"):
+            os.remove("temp_image.png")

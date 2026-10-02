@@ -10,9 +10,7 @@ def test_root():
     response = client.get("/")
 
     assert response.status_code == 200
-    assert response.json()["message"] == (
-        "CIFAR-10 Image Classification API is running!"
-    )
+    assert "CIFAR-10 Image Classification" in response.text
 
 
 def test_health():
@@ -21,8 +19,10 @@ def test_health():
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
 
+
 def test_predict():
     import torchvision
+    import os
 
     dataset = torchvision.datasets.CIFAR10(
         root="data/raw",
@@ -57,7 +57,5 @@ def test_predict():
         assert isinstance(data["confidence"], float)
 
     finally:
-        import os
-
         if os.path.exists(image_path):
             os.remove(image_path)

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CIFAR-10 AI Vision</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, #4f46e5 0%, transparent 35%),
+                radial-gradient(circle at bottom right, #06b6d4 0%, transparent 30%),
+                #0f172a;
+            color: white;
+            padding: 30px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 7px 15px;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 13px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 12px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: #cbd5e1;
+            font-size: 17px;
+            line-height: 1.6;
+            max-width: 650px;
+            margin: auto;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.35);
+            border-radius: 18px;
+            padding: 50px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+
+        .upload-area:hover {
+            border-color: #67e8f9;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .upload-icon {
+            font-size: 52px;
+            margin-bottom: 15px;
+        }
+
+        .upload-area h2 {
+            font-size: 21px;
+            margin-bottom: 8px;
+        }
+
+        .upload-area p {
+            color: #cbd5e1;
+            margin-bottom: 22px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .choose-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #6366f1, #06b6d4);
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .choose-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        #preview-section {
+            display: none;
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        #preview {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            object-fit: contain;
+            margin-bottom: 20px;
+        }
+
+        .predict-btn {
+            width: 100%;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #22c55e, #14b8a6);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .predict-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 25px;
+            color: #cbd5e1;
+        }
+
+        .spinner {
+            width: 35px;
+            height: 35px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #67e8f9;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #result {
+            display: none;
+            margin-top: 30px;
+            text-align: center;
+            padding: 25px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .result-label {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .prediction {
+            font-size: 34px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-transform: capitalize;
+        }
+
+        .confidence-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .progress {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #6366f1, #22d3ee);
+            border-radius: 20px;
+            transition: width 0.8s ease;
+        }
+
+        .model-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .info-box {
+            padding: 18px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 15px;
+        }
+
+        .info-box strong {
+            display: block;
+            font-size: 19px;
+            margin-bottom: 5px;
+        }
+
+        .info-box span {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        footer {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 25px;
+        }
+
+        @media (max-width: 650px) {
+            h1 {
+                font-size: 32px;
+            }
+
+            .model-info {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <div class="badge">🤖 PyTorch • CNN • CIFAR-10</div>
+
+        <h1>CIFAR-10 AI Vision</h1>
+
+        <p class="subtitle">
+            Upload an image and let a trained Convolutional Neural Network
+            identify what it sees.
+        </p>
+    </header>
+
+    <div class="card">
+
+        <div class="upload-area" id="uploadArea">
+
+            <div class="upload-icon">📸</div>
+
+            <h2>Upload an image</h2>
+
+            <p>Choose a JPEG or PNG image to classify</p>
+
+            <label for="fileInput" class="choose-btn">
+                Choose Image
+            </label>
+
+            <input
+                type="file"
+                id="fileInput"
+                accept="image/jpeg,image/png"
+            >
+
+        </div>
+
+        <div id="preview-section">
+
+            <img id="preview" alt="Selected image">
+
+            <button
+                class="predict-btn"
+                id="predictBtn"
+            >
+                🔍 Classify Image
+            </button>
+
+        </div>
+
+        <div id="loading">
+
+            <div class="spinner"></div>
+
+            <p>AI is analyzing your image...</p>
+
+        </div>
+
+        <div id="result">
+
+            <div class="result-label">
+                PREDICTION
+            </div>
+
+            <div class="prediction" id="prediction">
+                —
+            </div>
+
+            <div class="confidence-label">
+
+                <span>Confidence</span>
+
+                <span id="confidence">
+                    0%
+                </span>
+
+            </div>
+
+            <div class="progress">
+
+                <div
+                    class="progress-bar"
+                    id="progressBar"
+                ></div>
+
+            </div>
+
+        </div>
+
+        <div class="model-info">
+
+            <div class="info-box">
+
+                <strong>84.49%</strong>
+
+                <span>Test Accuracy</span>
+
+            </div>
+
+            <div class="info-box">
+
+                <strong>10</strong>
+
+                <span>Classes</span>
+
+            </div>
+
+            <div class="info-box">
+
+                <strong>PyTorch</strong>
+
+                <span>Framework</span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <footer>
+        CIFAR-10 Image Classification • Built by Pheany Phal
+    </footer>
+
+</div>
+
+
+<script>
+
+    const fileInput = document.getElementById("fileInput");
+
+    const preview = document.getElementById("preview");
+
+    const previewSection =
+        document.getElementById("preview-section");
+
+    const predictBtn =
+        document.getElementById("predictBtn");
+
+    const loading =
+        document.getElementById("loading");
+
+    const result =
+        document.getElementById("result");
+
+    const prediction =
+        document.getElementById("prediction");
+
+    const confidence =
+        document.getElementById("confidence");
+
+    const progressBar =
+        document.getElementById("progressBar");
+
+
+    fileInput.addEventListener("change", function () {
+
+        const file = this.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+
+            preview.src = event.target.result;
+
+            previewSection.style.display = "block";
+
+            result.style.display = "none";
+
+        };
+
+        reader.readAsDataURL(file);
+
+    });
+
+
+    predictBtn.addEventListener("click", async function () {
+
+        const file = fileInput.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        predictBtn.disabled = true;
+
+        loading.style.display = "block";
+
+        result.style.display = "none";
+
+
+        const formData = new FormData();
+
+        formData.append("file", file);
+
+
+        try {
+
+            const response = await fetch("/predict", {
+
+                method: "POST",
+
+                body: formData
+
+            });
+
+
+            const data = await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.detail || "Prediction failed."
+                );
+
+            }
+
+
+            prediction.textContent =
+                data.predicted_class;
+
+            confidence.textContent =
+                data.confidence.toFixed(2) + "%";
+
+            progressBar.style.width =
+                data.confidence + "%";
+
+            result.style.display = "block";
+
+        }
+
+        catch (error) {
+
+            alert(error.message);
+
+        }
+
+        finally {
+
+            loading.style.display = "none";
+
+            predictBtn.disabled = false;
+
+        }
+
+    });
+
+</script>
+
+</body>
+</html>
