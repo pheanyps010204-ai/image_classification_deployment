@@ -147,4 +147,9 @@ The repository includes sample CIFAR-10 images in:
 ```text
 sampl
 ```
+## 🚀 Live Demo
+
+Try the deployed application:
+
+https://image-classification-deployment.onrender.com/
 
